@@ -80,9 +80,8 @@ export function renderAdminPage(container: HTMLElement, onBack: () => void): () 
           </section>
 
           <div class="admin-actions">
-            <button class="secondary-button" data-admin-action="back">Back</button>
-            <button class="secondary-button" data-admin-action="reset-settings">Reset Settings</button>
-            <button class="primary-button" data-admin-action="save">Save and Back</button>
+            <button class="danger-button" data-admin-action="reset-settings">Reset</button>
+            <button class="primary-button" data-admin-action="save">Save</button>
           </div>
         </section>
       </main>
@@ -131,8 +130,6 @@ export function renderAdminPage(container: HTMLElement, onBack: () => void): () 
         render();
       } else if (action === "save") {
         saveBoothSettings(normalizeDraft(draft));
-        leave();
-      } else if (action === "back") {
         leave();
       } else if (action === "reset-settings") {
         draft = resetBoothSettings();

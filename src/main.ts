@@ -9,8 +9,6 @@ import {
 } from "./settings";
 import { saveRun } from "./storage";
 
-const DURATIONS = [10, 30, 60];
-
 type Phase = "armed" | "running" | "done";
 
 let boothSettings = loadBoothSettings();
@@ -35,9 +33,11 @@ function renderRoute(): void {
   routeCleanup?.();
   routeCleanup = null;
   if (window.location.pathname === "/admin") {
+    app.classList.add("admin-route");
     routeCleanup = renderAdminPage(app, navigateToGame);
     return;
   }
+  app.classList.remove("admin-route");
   boothSettings = loadBoothSettings();
   selectedDurationSeconds = boothSettings.durationSeconds;
   renderApp();
@@ -52,27 +52,16 @@ function renderApp(): void {
           ${renderLogo(boothSettings)}
           <h1>${escapeHtml(boothSettings.eventName)}</h1>
         </button>
-        <div class="controls">
-          <div class="duration-picker" role="group" aria-label="Test duration">
-            ${DURATIONS.map(
-              (seconds) => `
-                <button class="duration-button ${seconds === selectedDurationSeconds ? "selected" : ""}" data-duration="${seconds}">
-                  ${seconds}s
-                </button>
-              `,
-            ).join("")}
-          </div>
-          <button class="primary-button" data-action="reset">Reset</button>
-        </div>
       </header>
-      <section class="tap-zone" id="tap-zone" aria-label="Valid tap area">
-        <div class="tap-message" id="tap-message">Ready</div>
-        <div class="tap-submessage" id="tap-submessage">First valid tap starts the run</div>
-      </section>
       <section class="metrics-panel">
         <div class="metric"><span>Remaining</span><strong id="remaining">${selectedDurationSeconds.toFixed(2)}s</strong></div>
         <div class="metric"><span>Taps</span><strong id="taps">0</strong></div>
       </section>
+      <section class="tap-zone" id="tap-zone" aria-label="Valid tap area">
+        <div class="tap-message" id="tap-message">Ready</div>
+        <div class="tap-submessage" id="tap-submessage">First valid tap starts the run</div>
+      </section>
+      <button class="primary-button reset-button" data-action="reset">Reset</button>
     </main>
   `;
 
@@ -92,18 +81,10 @@ function tick(timeNow: number): void {
 
 app.addEventListener("click", (event) => {
   const target = event.target as HTMLElement;
-  const duration = target.closest<HTMLButtonElement>("[data-duration]");
   const action = target.closest<HTMLButtonElement>("[data-action]")?.dataset.action;
 
   if (action === "brand") {
     handleBrandTap();
-  } else if (duration) {
-    if (phase === "running") {
-      return;
-    }
-    selectedDurationSeconds = Number(duration.dataset.duration);
-    resetRun();
-    updateControls();
   } else if (action === "reset") {
     resetRun();
   }
@@ -140,7 +121,6 @@ app.addEventListener(
       }
       getElement("tap-message").textContent = "Tap";
       getElement("tap-submessage").textContent = "Keep fingers inside the safe zone";
-      updateControls();
     }
   },
   { passive: false },
@@ -192,7 +172,6 @@ function resetRun(): void {
   getElement("tap-message").textContent = "Ready";
   getElement("tap-submessage").textContent = "First valid tap starts the run";
   updateMetrics(selectedDurationSeconds * 1000, 0);
-  updateControls();
 }
 
 function invalidateRun(reason: string): void {
@@ -219,21 +198,11 @@ function finishAndSave(): void {
   updateMetrics(0, result.totalClicks);
   getElement("tap-message").textContent = `${result.totalClicks}`;
   getElement("tap-submessage").textContent = "Finished";
-  updateControls();
 }
 
 function updateMetrics(remainingMs: number, taps: number): void {
   getElement("remaining").textContent = `${(remainingMs / 1000).toFixed(2)}s`;
   getElement("taps").textContent = String(taps);
-}
-
-function updateControls(): void {
-  document.querySelectorAll<HTMLButtonElement>("[data-duration]").forEach((button) => {
-    const seconds = Number(button.dataset.duration);
-    button.classList.toggle("selected", seconds === selectedDurationSeconds);
-    button.disabled = phase === "running";
-  });
-
 }
 
 function handleBrandTap(): void {
