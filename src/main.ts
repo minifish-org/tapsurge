@@ -1,0 +1,222 @@
+import "./styles.css";
+import { TapRun, type TapAreaBounds } from "./game";
+import { saveRun } from "./storage";
+
+const DURATIONS = [10, 30, 60];
+
+type Phase = "armed" | "running" | "done";
+
+let selectedDurationSeconds = 30;
+let run = new TapRun(selectedDurationSeconds * 1000);
+let animationFrame = 0;
+let tapPulseTimer = 0;
+let resultSaved = false;
+let phase: Phase = "armed";
+
+const app = document.querySelector<HTMLDivElement>("#app")!;
+
+renderApp();
+registerServiceWorker();
+
+function renderApp(): void {
+  app.innerHTML = `
+    <main class="app-shell">
+      <header class="top-bar">
+        <div>
+          <h1>TapSurge</h1>
+        </div>
+        <div class="controls">
+          <div class="duration-picker" role="group" aria-label="Test duration">
+            ${DURATIONS.map(
+              (seconds) => `
+                <button class="duration-button ${seconds === selectedDurationSeconds ? "selected" : ""}" data-duration="${seconds}">
+                  ${seconds}s
+                </button>
+              `,
+            ).join("")}
+          </div>
+          <button class="primary-button" data-action="reset">Reset</button>
+        </div>
+      </header>
+      <section class="tap-zone" id="tap-zone" aria-label="Valid tap area">
+        <div class="tap-message" id="tap-message">Ready</div>
+        <div class="tap-submessage" id="tap-submessage">First valid tap starts the run</div>
+      </section>
+      <section class="metrics-panel">
+        <div class="metric"><span>Remaining</span><strong id="remaining">${selectedDurationSeconds.toFixed(2)}s</strong></div>
+        <div class="metric"><span>Taps</span><strong id="taps">0</strong></div>
+      </section>
+    </main>
+  `;
+
+  resetRun();
+}
+
+function tick(timeNow: number): void {
+  if (run.maybeFinish(timeNow)) {
+    finishAndSave();
+    return;
+  }
+
+  const metrics = run.getMetrics(timeNow);
+  updateMetrics(metrics.remainingMs, metrics.totalClicks);
+  animationFrame = requestAnimationFrame(tick);
+}
+
+app.addEventListener("click", (event) => {
+  const target = event.target as HTMLElement;
+  const duration = target.closest<HTMLButtonElement>("[data-duration]");
+  const action = target.closest<HTMLButtonElement>("[data-action]")?.dataset.action;
+
+  if (duration) {
+    if (phase === "running") {
+      return;
+    }
+    selectedDurationSeconds = Number(duration.dataset.duration);
+    resetRun();
+    updateControls();
+  } else if (action === "reset") {
+    resetRun();
+  }
+});
+
+app.addEventListener(
+  "pointerdown",
+  (event) => {
+    const tapZone = document.querySelector<HTMLElement>("#tap-zone");
+    if (!tapZone || phase === "done") {
+      return;
+    }
+
+    event.preventDefault();
+    const rect = tapZone.getBoundingClientRect();
+    const area: TapAreaBounds = {
+      left: rect.left,
+      right: rect.right,
+      top: rect.top,
+      bottom: rect.bottom,
+    };
+    const accepted = run.pointerDown(
+      event.pointerId,
+      performance.now(),
+      event.clientX,
+      event.clientY,
+      area,
+    );
+    if (accepted) {
+      showTapEffect(tapZone, rect, event.clientX, event.clientY, event.pointerId);
+      if (phase === "armed") {
+        phase = "running";
+        animationFrame = requestAnimationFrame(tick);
+      }
+      getElement("tap-message").textContent = "Tap";
+      getElement("tap-submessage").textContent = "Keep fingers inside the safe zone";
+      updateControls();
+    }
+  },
+  { passive: false },
+);
+
+for (const eventName of ["pointerup", "pointercancel", "pointerleave"]) {
+  window.addEventListener(eventName, (event) => run.pointerUp((event as PointerEvent).pointerId));
+}
+
+for (const eventName of ["blur", "pagehide"]) {
+  window.addEventListener(eventName, () => invalidateRun("Window lost focus."));
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    invalidateRun("Page was hidden during the run.");
+  }
+});
+
+document.addEventListener("contextmenu", (event) => event.preventDefault());
+
+function showTapEffect(
+  tapZone: HTMLElement,
+  rect: DOMRect,
+  clientX: number,
+  clientY: number,
+  pointerId: number,
+): void {
+  const effect = document.createElement("span");
+  effect.className = "tap-effect";
+  effect.style.left = `${clientX - rect.left}px`;
+  effect.style.top = `${clientY - rect.top}px`;
+  effect.style.setProperty("--tap-hue", String((pointerId * 67) % 360));
+  tapZone.append(effect);
+  tapZone.classList.remove("tap-zone-hit");
+  void tapZone.offsetWidth;
+  tapZone.classList.add("tap-zone-hit");
+  window.clearTimeout(tapPulseTimer);
+  tapPulseTimer = window.setTimeout(() => tapZone.classList.remove("tap-zone-hit"), 120);
+  effect.addEventListener("animationend", () => effect.remove(), { once: true });
+}
+
+function resetRun(): void {
+  cancelAnimationFrame(animationFrame);
+  run = new TapRun(selectedDurationSeconds * 1000);
+  run.arm(selectedDurationSeconds * 1000);
+  resultSaved = false;
+  phase = "armed";
+  getElement("tap-message").textContent = "Ready";
+  getElement("tap-submessage").textContent = "First valid tap starts the run";
+  updateMetrics(selectedDurationSeconds * 1000, 0);
+  updateControls();
+}
+
+function invalidateRun(reason: string): void {
+  if (phase !== "armed" && phase !== "running") {
+    return;
+  }
+
+  run.invalidate(reason);
+  if (run.getStatus() === "finished") {
+    finishAndSave();
+  }
+}
+
+function finishAndSave(): void {
+  if (resultSaved) {
+    return;
+  }
+
+  resultSaved = true;
+  cancelAnimationFrame(animationFrame);
+  const result = run.createResult();
+  saveRun(result);
+  phase = "done";
+  updateMetrics(0, result.totalClicks);
+  getElement("tap-message").textContent = `${result.totalClicks}`;
+  getElement("tap-submessage").textContent = "Finished";
+  updateControls();
+}
+
+function updateMetrics(remainingMs: number, taps: number): void {
+  getElement("remaining").textContent = `${(remainingMs / 1000).toFixed(2)}s`;
+  getElement("taps").textContent = String(taps);
+}
+
+function updateControls(): void {
+  document.querySelectorAll<HTMLButtonElement>("[data-duration]").forEach((button) => {
+    const seconds = Number(button.dataset.duration);
+    button.classList.toggle("selected", seconds === selectedDurationSeconds);
+    button.disabled = phase === "running";
+  });
+
+}
+
+function getElement<T extends HTMLElement>(id: string): T {
+  return document.getElementById(id) as T;
+}
+
+function registerServiceWorker(): void {
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // Offline support is best-effort in dev; production builds still run without registration.
+      });
+    });
+  }
+}

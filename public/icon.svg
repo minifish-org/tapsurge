@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TapSurge icon">
+  <rect width="512" height="512" rx="112" fill="#08111f" />
+  <circle cx="256" cy="256" r="176" fill="#102747" stroke="#4ade80" stroke-width="20" />
+  <path
+    d="M166 276c42-72 82-108 120-108 40 0 66 25 66 62 0 31-18 52-52 65l-36 14c-24 9-37 22-39 40h143v50H158c2-63 30-105 85-127l36-15c18-7 27-17 27-31 0-13-9-22-24-22-22 0-45 26-70 77z"
+    fill="#f8fafc"
+  />
+  <path d="M132 128l42 42M380 128l-42 42M256 82v60" stroke="#f43f5e" stroke-width="24" stroke-linecap="round" />
+</svg>
