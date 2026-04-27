@@ -1,30 +1,57 @@
 import "./styles.css";
+import { renderAdminPage } from "./admin";
 import { TapRun, type TapAreaBounds } from "./game";
+import {
+  applyThemeColor,
+  loadBoothSettings,
+  resolveThemeColor,
+  type BoothSettings,
+} from "./settings";
 import { saveRun } from "./storage";
 
 const DURATIONS = [10, 30, 60];
 
 type Phase = "armed" | "running" | "done";
 
-let selectedDurationSeconds = 30;
+let boothSettings = loadBoothSettings();
+let selectedDurationSeconds = boothSettings.durationSeconds;
 let run = new TapRun(selectedDurationSeconds * 1000);
 let animationFrame = 0;
 let tapPulseTimer = 0;
+let brandTapTimes: number[] = [];
+let routeCleanup: (() => void) | null = null;
 let resultSaved = false;
 let phase: Phase = "armed";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
-renderApp();
+renderRoute();
 registerServiceWorker();
 
+window.addEventListener("popstate", renderRoute);
+
+function renderRoute(): void {
+  cancelAnimationFrame(animationFrame);
+  routeCleanup?.();
+  routeCleanup = null;
+  if (window.location.pathname === "/admin") {
+    routeCleanup = renderAdminPage(app, navigateToGame);
+    return;
+  }
+  boothSettings = loadBoothSettings();
+  selectedDurationSeconds = boothSettings.durationSeconds;
+  renderApp();
+}
+
 function renderApp(): void {
+  applyThemeColor(resolveThemeColor(boothSettings));
   app.innerHTML = `
     <main class="app-shell">
       <header class="top-bar">
-        <div>
-          <h1>TapSurge</h1>
-        </div>
+        <button class="brand-trigger" data-action="brand" aria-label="Booth setup hidden trigger">
+          ${renderLogo(boothSettings)}
+          <h1>${escapeHtml(boothSettings.eventName)}</h1>
+        </button>
         <div class="controls">
           <div class="duration-picker" role="group" aria-label="Test duration">
             ${DURATIONS.map(
@@ -68,7 +95,9 @@ app.addEventListener("click", (event) => {
   const duration = target.closest<HTMLButtonElement>("[data-duration]");
   const action = target.closest<HTMLButtonElement>("[data-action]")?.dataset.action;
 
-  if (duration) {
+  if (action === "brand") {
+    handleBrandTap();
+  } else if (duration) {
     if (phase === "running") {
       return;
     }
@@ -207,8 +236,49 @@ function updateControls(): void {
 
 }
 
+function handleBrandTap(): void {
+  const now = performance.now();
+  brandTapTimes = brandTapTimes.filter((time) => now - time <= 3000);
+  brandTapTimes.push(now);
+
+  if (brandTapTimes.length >= 5) {
+    brandTapTimes = [];
+    navigateToAdmin();
+  }
+}
+
+function navigateToAdmin(): void {
+  history.pushState(null, "", "/admin");
+  renderRoute();
+}
+
+function navigateToGame(): void {
+  history.pushState(null, "", "/");
+  renderRoute();
+}
+
+function renderLogo(settings: BoothSettings): string {
+  if (!settings.logoDataUrl) {
+    return "";
+  }
+  return `<img class="player-logo" src="${settings.logoDataUrl}" alt="" />`;
+}
+
 function getElement<T extends HTMLElement>(id: string): T {
   return document.getElementById(id) as T;
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => {
+    const entities: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+    return entities[char];
+  });
 }
 
 function registerServiceWorker(): void {

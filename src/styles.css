@@ -1,4 +1,5 @@
 :root {
+  --theme-color: #4ade80;
   color: #e8f2ff;
   background: #07101d;
   font-family:
@@ -55,7 +56,8 @@ button:disabled {
     max(18px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
 }
 
-.top-bar {
+.top-bar,
+.admin-header {
   align-items: center;
   display: flex;
   gap: 20px;
@@ -63,12 +65,41 @@ button:disabled {
 }
 
 h1 {
-  color: #4ade80;
+  color: var(--theme-color);
   font-size: clamp(2.6rem, 5.5vw, 4.8rem);
   font-weight: 950;
   letter-spacing: -0.06em;
   line-height: 1;
   margin: 0;
+}
+
+.brand-trigger {
+  align-items: center;
+  background: transparent;
+  display: flex;
+  gap: 14px;
+  min-height: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.player-logo,
+.booth-logo,
+.logo-placeholder {
+  border-radius: 18px;
+  flex: 0 0 auto;
+  height: clamp(54px, 8vh, 82px);
+  object-fit: contain;
+  width: clamp(54px, 8vh, 82px);
+}
+
+.logo-placeholder {
+  align-items: center;
+  border: 2px solid var(--theme-color);
+  color: var(--theme-color);
+  display: flex;
+  font-weight: 950;
+  justify-content: center;
 }
 
 .controls,
@@ -86,14 +117,15 @@ h1 {
 
 .duration-button.selected,
 .primary-button {
-  background: #4ade80;
+  background: var(--theme-color);
   color: #031008;
 }
 
 .tap-zone {
   align-items: center;
-  background: radial-gradient(circle at center, rgba(74, 222, 128, 0.2), transparent 58%), #0c1b2f;
-  border: 4px solid rgba(74, 222, 128, 0.82);
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--theme-color) 22%, transparent), transparent 58%),
+    #0c1b2f;
+  border: 4px solid color-mix(in srgb, var(--theme-color) 82%, transparent);
   border-radius: clamp(24px, 4vw, 34px);
   box-shadow: inset 0 0 0 12px rgba(7, 16, 29, 0.64);
   display: flex;
@@ -107,10 +139,10 @@ h1 {
 }
 
 .tap-zone-hit {
-  border-color: rgba(134, 239, 172, 0.95);
+  border-color: color-mix(in srgb, var(--theme-color) 95%, white 5%);
   box-shadow:
     inset 0 0 0 12px rgba(7, 16, 29, 0.64),
-    0 0 34px rgba(74, 222, 128, 0.26);
+    0 0 34px color-mix(in srgb, var(--theme-color) 26%, transparent);
 }
 
 .tap-message {
@@ -174,6 +206,100 @@ h1 {
   min-height: 0;
   overflow: hidden;
   padding: 14px;
+}
+
+.admin-shell {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  height: 100dvh;
+  justify-content: center;
+  overflow: auto;
+  padding: max(18px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+}
+
+.admin-card {
+  background: #0b1729;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 28px;
+  display: grid;
+  gap: 18px;
+  max-width: 760px;
+  padding: clamp(20px, 4vw, 32px);
+  width: min(100%, 760px);
+}
+
+.admin-header {
+  justify-content: flex-start;
+}
+
+.admin-kicker,
+.field > span,
+.preview-card span {
+  color: #91a4bd;
+  display: block;
+  font-size: 0.9rem;
+}
+
+.admin-kicker {
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field input[type="text"],
+.field input[type="file"] {
+  background: rgba(7, 16, 29, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 16px;
+  box-sizing: border-box;
+  color: inherit;
+  font: inherit;
+  min-height: 52px;
+  padding: 0 16px;
+  width: 100%;
+}
+
+.field input[type="file"] {
+  padding: 14px 16px;
+}
+
+.segmented,
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.preview-card {
+  align-items: center;
+  background: rgba(7, 16, 29, 0.9);
+  border-radius: 20px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: auto 1fr auto;
+  padding: 16px;
+}
+
+.preview-card strong {
+  display: block;
+  font-size: 1.4rem;
+}
+
+.preview-card i {
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  height: 40px;
+  width: 40px;
+}
+
+.admin-actions {
+  justify-content: flex-end;
 }
 
 .metric {
