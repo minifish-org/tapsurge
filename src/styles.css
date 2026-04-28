@@ -55,9 +55,12 @@ button:disabled {
   gap: clamp(8px, 1.4vh, 16px);
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   height: 100dvh;
+  margin-inline: auto;
+  max-width: 980px;
   min-height: 0;
   padding: max(18px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
     max(18px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  width: 100%;
 }
 
 .top-bar,
@@ -236,11 +239,12 @@ h1 {
   box-sizing: border-box;
   display: flex;
   height: 100dvh;
-  justify-content: flex-start;
+  justify-content: center;
   overflow: auto;
   padding: max(18px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
     max(18px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
   -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .admin-card {
@@ -252,6 +256,7 @@ h1 {
   max-width: 760px;
   min-width: 0;
   padding: clamp(20px, 4vw, 32px);
+  margin-block: clamp(0px, 3vh, 28px);
   width: min(100%, 760px);
 }
 

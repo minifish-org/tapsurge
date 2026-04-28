@@ -1,4 +1,4 @@
-export const DEFAULT_EVENT_NAME = "TapSurge Challenge";
+export const DEFAULT_EVENT_NAME = "TapSurge";
 export const DEFAULT_DURATION_SECONDS = 30;
 export const DEFAULT_THEME_COLOR = "#4ade80";
 
