@@ -12,10 +12,17 @@ TapSurge is an offline-first, multi-finger click-speed test for iPad competition
 - Local run history stored in `localStorage`, keyed by unique run ID.
 - Custom service worker for offline app-shell caching.
 
+## Requirements and limitations
+
+Use Node.js 22.12+ and npm. This is an experimental personal project; iPad
+multitouch, Safari installation and offline behavior should be checked on your
+actual device. Clearing browser storage deletes local results. No account or
+server-side backup is provided.
+
 ## Development
 
 ```sh
-npm install
+npm ci
 npm run dev
 ```
 
@@ -57,3 +64,9 @@ Each completed run is stored in `localStorage` under `tapsurge:run:<run-id>`. Re
 - Total taps, average CPS, max real-time CPS, and max simultaneous fingers.
 - `tapTimesMs` as millisecond offsets from the first valid tap.
 - `pointerIds` aligned by index with `tapTimesMs`.
+
+## License and contributions
+
+Project code is licensed under [AGPL-3.0-only](LICENSE). Third-party dependencies
+and model assets retain their own licenses. See [CONTRIBUTING.md](CONTRIBUTING.md)
+and [SECURITY.md](SECURITY.md).
